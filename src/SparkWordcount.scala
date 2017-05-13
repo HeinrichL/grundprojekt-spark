@@ -16,7 +16,7 @@ object SparkWordCount {
 		
       val count = input.flatMap(line ⇒ line.split(" ")) 
       .map(word ⇒ (word, 1)) 
-      .reduceByKey(_ + _) 
+      //.reduceByKey(_ + _) 
        
       /* saveAsTextFile method is an action that effects on the RDD */  
       count.foreach(word => println(word._1 + " " + word._2))
