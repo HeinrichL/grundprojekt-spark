@@ -5,7 +5,7 @@ import org.apache.spark.graphx.util.GraphGenerators
 object PregelExample {
   
   def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("GraphX Pregel Example")//.setMaster("spark://localhost:7077")
+    val conf = new SparkConf()//.setAppName("GraphX Pregel Example")//.setMaster("spark://localhost:7077")
     val sc = new SparkContext(conf)
     
     val nodes = args(0).toInt
@@ -34,7 +34,7 @@ object PregelExample {
       
     println(computed.vertices.collect.mkString("\n"))
       
-    val dd = readLine()
+    //val dd = readLine()
   }
   
 }

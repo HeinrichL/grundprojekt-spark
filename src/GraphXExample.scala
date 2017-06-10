@@ -6,7 +6,8 @@ import org.apache.spark.rdd.RDD
 object GraphXExample {
   def main(args: Array[String]) { 
 
-      val sc = new SparkContext( "local", "GraphX Example", "/usr/local/spark") 
+      val conf = new SparkConf()//.setAppName("GraphX Pregel Example")//.setMaster("spark://localhost:7077")
+    val sc = new SparkContext(conf)
 		
       // Create an RDD for the vertices
       val users: RDD[(VertexId, (String, String))] =
