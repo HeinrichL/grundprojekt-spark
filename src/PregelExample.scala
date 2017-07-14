@@ -3,12 +3,12 @@ import org.apache.spark.graphx._ //{ Graph, VertexRDD }
 import org.apache.spark.graphx.util.GraphGenerators
 
 object PregelExample {
-  
+
   def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("GraphX Pregel Example")//.setMaster("spark://localhost:7077")
+    val conf = new SparkConf().setAppName("GraphX Pregel Example").setMaster("local")
     val sc = new SparkContext(conf)
-    
-    val nodes = args(0).toInt
+
+    val nodes = 30000//args(0).toInt
     val graph: Graph[(Int, Int), Int] =
       GraphGenerators
         .logNormalGraph(sc, numVertices = nodes)
@@ -16,25 +16,22 @@ object PregelExample {
           val rand = math.random
           ((rand * nodes).toInt, (rand * nodes).toInt)
         }).cache()
-        
 
     // get highest value of vertex
     val computed = graph.pregel(0)(
-      (id, ownVal, recVal) => (ownVal._1, math.max(ownVal._2, recVal)), 
+      (id, ownVal, recVal) => (ownVal._1, math.max(ownVal._2, recVal)), // Apply
       t => {
-        if(t.srcAttr._2 > t.dstAttr._2){
+        if (t.srcAttr._2 > t.dstAttr._2) {
+          t.attr = 500
           Iterator((t.dstId, t.srcAttr._2))
-        }
-        else {
+        } else {
           Iterator.empty
         }
-      }, 
-      (a,b) => math.max(a,b)
-      )
-      
-    println(computed.vertices.collect.mkString("\n"))
-      
+      }, // Scatter
+      (a, b) => math.max(a, b)) // Gather
+
+    println(computed.edges.collect.mkString("\n"))
+
     val dd = readLine()
   }
-  
 }

@@ -7,7 +7,7 @@ object LargeGraphExample {
     val sc = new SparkContext("local[*]", "GraphX German Cities", "/usr/local/spark")
 
     val graph: Graph[Double, Int] =
-      GraphGenerators.logNormalGraph(sc, numVertices = 1000000).mapVertices((id, _) => id.toDouble).cache()
+      GraphGenerators.logNormalGraph(sc, numVertices = 10000).mapVertices((id, _) => id.toDouble).cache()
 
     println(graph.inDegrees.reduce(max))
     println(graph.outDegrees.reduce(max))

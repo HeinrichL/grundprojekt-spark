@@ -27,10 +27,6 @@ object GermanCities {
       // Build the initial Graph
       val graph = Graph(cities, distances, defaultUser)
       
-      // Count all users which are postdocs
-      val noPostdocs = graph.edges.filter { e => e.dstId == 4L}.count
-      
-      println(noPostdocs)
       println(graph.edges.count)
       
       // Count all the edges where src > dst
