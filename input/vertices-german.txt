@@ -1,0 +1,7 @@
+0,hamburg
+1,berlin
+2,bremen
+3,erfurt
+4,köln
+5,stuttgart
+6,münchen
