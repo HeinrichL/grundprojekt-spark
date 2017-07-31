@@ -4,7 +4,8 @@ import org.apache.spark.graphx.util.GraphGenerators
 
 object LargeGraphExample {
   def main(args: Array[String]) {
-    val sc = new SparkContext("local[*]", "GraphX German Cities", "/usr/local/spark")
+    val conf = new SparkConf()//.setAppName("GraphX Pregel Example")//.setMaster("spark://localhost:7077")
+    val sc = new SparkContext(conf)
 
     val graph: Graph[Double, Int] =
       GraphGenerators.logNormalGraph(sc, numVertices = 10000).mapVertices((id, _) => id.toDouble).cache()

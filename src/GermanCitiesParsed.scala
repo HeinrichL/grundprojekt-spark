@@ -6,7 +6,8 @@ import org.apache.spark.rdd.RDD
 object GermanCitiesParsed {
   def main(args: Array[String]) { 
 
-      val sc = new SparkContext( "local", "GraphX German Cities", "/usr/local/spark") 
+      val conf = new SparkConf()//.setAppName("GraphX Pregel Example")//.setMaster("spark://localhost:7077")
+    val sc = new SparkContext(conf)
 		  val inputVertices = sc.textFile("/home/heinrich/Schreibtisch/graph-vertices.txt") 
 		  val inputEdges = sc.textFile("/home/heinrich/Schreibtisch/graph-edges.txt") 
       // Create an RDD for the vertices

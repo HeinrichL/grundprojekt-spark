@@ -5,7 +5,8 @@ import org.apache.spark.graphx.util.GraphGenerators
 object JoinExample {
   def main(args: Array[String]) {
 
-    val sc = new SparkContext("local", "GraphX German Cities", "/usr/local/spark")
+    val conf = new SparkConf()//.setAppName("GraphX Pregel Example")//.setMaster("spark://localhost:7077")
+    val sc = new SparkContext(conf)
 
     val vertexProperties = sc.textFile("/home/heinrich/Schreibtisch/g.vertices").map(line => {
       val vertex = line.split(",")

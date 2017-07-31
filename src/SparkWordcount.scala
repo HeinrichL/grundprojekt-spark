@@ -5,7 +5,8 @@ import org.apache.spark._
 object SparkWordCount { 
    def main(args: Array[String]) { 
 
-      val sc = new SparkContext( "local", "Word Count", "/usr/local/spark") 
+      val conf = new SparkConf()//.setAppName("GraphX Pregel Example")//.setMaster("spark://localhost:7077")
+    val sc = new SparkContext(conf)
 		
       /* local = master URL; Word Count = application name; */  
       /* /usr/local/spark = Spark Home; Nil = jars; Map = environment */ 

@@ -5,7 +5,8 @@ import org.apache.spark.rdd.RDD
 
 object Google {
   def main(args: Array[String]) {
-    val sc = new SparkContext("local[*]", "GraphX German Cities", "/usr/local/spark")
+    val conf = new SparkConf()//.setAppName("GraphX Pregel Example")//.setMaster("spark://localhost:7077")
+    val sc = new SparkContext(conf)
 
 //    val input = sc.textFile("/home/heinrich/Schreibtisch/web-Google.txt")
 //
