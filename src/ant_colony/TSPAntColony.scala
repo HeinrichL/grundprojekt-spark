@@ -17,7 +17,7 @@ object TSPAntColony {
 
   def main(args: Array[String]) {
 
-    val conf = new SparkConf().setAppName("GraphX TSP Ant Colony Optimization").setMaster("local[*]")
+    val conf = new SparkConf().setAppName("GraphX TSP Ant Colony Optimization").setMaster("local[4]")
     val sc = new SparkContext(conf)
 
     sc.setCheckpointDir("checkpoint/")
@@ -45,7 +45,7 @@ object TSPAntColony {
           .logNormalGraph(sc, 1000)
           .mapVertices((id, _) => id.toString())
           .mapEdges(e => (rand.nextInt(50) + 100, 1.0, Vector.empty[Int]))
-      }.cache()
+      } //.cache()
 
     val numCities = g.numVertices.toInt
     val numAnts = (numCities * antFactor).toInt
@@ -60,11 +60,10 @@ object TSPAntColony {
           val randCity = rand.nextInt(numCities).toLong
           (randCity,
             (randCity, t, (List[Long](randCity), 0), (List[Long](), Integer.MAX_VALUE)))
-        }).cache()
+        }) //.cache()
 
-    g = g.mapEdges(e => (e.attr._1, e.attr._2, Vector.fill(numAnts)(0))).cache()
+    g = g.mapEdges(e => (e.attr._1, e.attr._2, Vector.fill(numAnts)(0))) //.cache()
 
-    //val antTourLength = sc.accumulator(0)
     val numIterations = 1
     for (i <- 1 to numIterations) {
 
@@ -103,10 +102,11 @@ object TSPAntColony {
                       (e.dstId == id && (antVisited.length < numCities && antVisited.contains(e.srcId.toLong) || antVisited.length == numCities && e.srcId != antStart)))
                       0
                     else
-                      math.pow(e.attr._1, alpha) * Math.pow(e.attr._2, beta) / prop), e.attr._3)
+                      math.pow(e.attr._1, alpha) * Math.pow(e.attr._2, beta) / prop),
+                    e.attr._3)
               }), (antStart, antId, (antVisited, antTourlength), bestTour))
             }
-          } //.cache()
+          } //----------.cache()
 
         //vIncidentEdgesWithPropability.collect().foreach(a => println(a._1 + " " + a._2.mkString(",")))
 
@@ -115,14 +115,14 @@ object TSPAntColony {
           .map {
             case (id, edges, ant) =>
               (id, (Seq((edges.maxBy(e => e._3._3), ant))))
-          }.cache()
+          } //.cache()
 
         // reduce selected edges to vertex (for traversion to next edge)
         val vSelectedEdgeReducedToVertex = vSelectedEdge.map(t => (t._1, t._2)).reduceByKey((ant1, ant2) => ant1.union(ant2))
 
         // write selected edges to the graph
         val graphWithChoosenEdges = g.outerJoinVertices(vSelectedEdgeReducedToVertex)(
-          (id, vVal, joined) => (vVal, joined)).cache()
+          (id, vVal, joined) => (vVal, joined)) //.cache()
 
         // traverse edges
         g = graphWithChoosenEdges.mapTriplets(triplet => {
@@ -151,10 +151,10 @@ object TSPAntColony {
           }
 
           (edge._1, edge._2, newVector)
-        }).mapVertices((id, tuple) => tuple._1).cache()
+        }).mapVertices((id, tuple) => tuple._1) //.cache()
 
         // update Ant-RDD
-        // set current vertex to target, save previous vertex and add current vertex to tour
+        // set current vertex to target and add current vertex to tour
         ants = vSelectedEdge.map(ggg => {
           val idFrom = ggg._1
           val (edgeSrc, edgeDst, (dist, pheromone, prop), vector) = ggg._2.head._1
@@ -163,9 +163,9 @@ object TSPAntColony {
           val idTo = if (idFrom == edgeSrc) edgeDst else edgeSrc
 
           (idTo, (antFrom, antId, (idTo :: currentTour, currentLength + dist), (bestTour, bestLength)))
-        }).cache()
+        }) //.cache()
 
-        // truncate object DAG every 25th iteration (else StackOverflow error will be thrown)
+        // truncate object DAG occasionally (else StackOverflow error will be thrown)
         if (j % 25 == 0) {
 
           g.checkpoint()
@@ -182,22 +182,22 @@ object TSPAntColony {
       }
       // all ants performed one tour
 
-      // calculate pheromon to deposit.
+      // calculate amount of pheromone to deposit for every ant.
       // use formula deltaT = Q / L where Q is deposit constant and L is length of tour
       val antPheromones = Vector.empty ++ ants.sortBy(f => f._2._2).map(a => (Q.toDouble / a._2._3._2)).collect()
 
-      // update pheromones for each edge
+      // update pheromone value for each edge
       // tNew = tOld * evaporation + sum(deltaT from all ants that traversed this edge)
       g = g.mapEdges(e => {
         val resultPheromone = e.attr._3.zip(antPheromones).map(t => t._1 * t._2).reduce((a, b) => a + b)
         (e.attr._1, e.attr._2 * evaporation + resultPheromone, Vector.fill(e.attr._3.length)(0))
-      }).cache()
+      }) //.cache()
 
-      // reset ant, save best tour
+      // reset ant and save best tour
       ants = ants.map(f => {
         val (curr, (antFrom, antId, (currentTour, currentLength), (bestTour, bestLength))) = f
         (curr, (antFrom, antId, (List(antFrom), 0), if (bestLength > currentLength) (currentTour, currentLength) else (bestTour, bestLength)))
-      }).cache()
+      }) //.cache()
 
     }
 
