@@ -32,8 +32,8 @@ object CityData {
     Graph(cities, distances, defaultUser)
   }
   
-  def bays29(sc: SparkContext) : Graph[String, (Int, Double)] = {
-    val input = sc.textFile("input/complete_bays29.tsp")
+  def bays29(sc: SparkContext, hdfsLocation : String) : Graph[String, (Int, Double)] = {
+    val input = sc.textFile(hdfsLocation + "/complete_bays29.tsp")
     val edges = input.map
       {
         line => 
@@ -43,8 +43,8 @@ object CityData {
     return Graph.fromEdges(edges, "Empty")
   }
   
-  def berlin52(sc: SparkContext) : Graph[String, (Int, Double)] = {
-    val input = sc.textFile("input/complete_berlin52.tsp")
+  def berlin52(sc: SparkContext, hdfsLocation : String) : Graph[String, (Int, Double)] = {
+    val input = sc.textFile(hdfsLocation + "/complete_berlin52.tsp")
     val edges = input.map
       {
         line => 
@@ -54,8 +54,8 @@ object CityData {
     return Graph.fromEdges(edges, "Empty")
   }
   
-  def att48(sc: SparkContext) : Graph[String, (Int, Double)] = {
-    val input = sc.textFile("input/complete_att48.tsp")
+  def att48(sc: SparkContext, hdfsLocation : String) : Graph[String, (Int, Double)] = {
+    val input = sc.textFile(hdfsLocation + "/complete_att48.tsp")
     val edges = input.map
       {
         line => 
@@ -65,8 +65,8 @@ object CityData {
     return Graph.fromEdges(edges, "Empty")
   }
   
-  def sahara(sc: SparkContext) : Graph[String, (Int, Double)] = {
-    val input = sc.textFile("input/complete_sahara.tsp")
+  def sahara(sc: SparkContext, hdfsLocation : String) : Graph[String, (Int, Double)] = {
+    val input = sc.textFile(hdfsLocation + "/complete_sahara.tsp")
     val edges = input.map
       {
         line => 
@@ -76,8 +76,8 @@ object CityData {
     return Graph.fromEdges(edges, "Empty")
   }
   
-  def st70(sc: SparkContext) : Graph[String, (Int, Double)] = {
-    val input = sc.textFile("input/complete_st70.tsp")
+  def st70(sc: SparkContext, hdfsLocation : String) : Graph[String, (Int, Double)] = {
+    val input = sc.textFile(hdfsLocation + "/complete_st70.tsp")
     val edges = input.map
       {
         line => 
@@ -87,8 +87,19 @@ object CityData {
     return Graph.fromEdges(edges, "Empty")
   }
   
-  def linearGraph(sc: SparkContext) : Graph[String, (Int, Double)] = {
-    val input = sc.textFile("input/linear.txt") 
+  def linearGraph(sc: SparkContext, hdfsLocation : String) : Graph[String, (Int, Double)] = {
+    val input = sc.textFile(hdfsLocation + "/hdfs://linear.txt") 
+    val edges = input.map
+      {
+        line => 
+          val edge = line.split(",")
+          Edge(edge(0).toLong, edge(1).toLong, (edge(2).toInt, 0.0))
+      }
+    return Graph.fromEdges(edges, "Empty")
+  }
+  
+  def big(sc: SparkContext, hdfsLocation : String) : Graph[String, (Int, Double)] = {
+    val input = sc.textFile(hdfsLocation + "/complete_50k.tsp") 
     val edges = input.map
       {
         line => 

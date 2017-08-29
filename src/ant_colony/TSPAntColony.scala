@@ -13,33 +13,36 @@ object TSPAntColony {
   val alpha = -1.5 // influence of attractiveness factor
   val beta = 1.5 // influence of trail factor
   val evaporation = 0.5
-  val antFactor = 5
+  val antFactor = 0.8
 
   def main(args: Array[String]) {
 
     val conf = new SparkConf().setAppName("GraphX TSP Ant Colony Optimization").setMaster("local[4]")
     val sc = new SparkContext(conf)
-
-    sc.setCheckpointDir("checkpoint/")
+    
+    val hdfsLocation = args(0)
+    sc.setCheckpointDir(hdfsLocation + "/spark/checkpoint")
 
     val rand = new Random()
 
-    val tspInstance = "st70"
+    val tspInstance = args(1)
     val antDist = "random"
 
     var g: Graph[String, (Int, Double, Vector[Int])] =
       if (tspInstance.equals("linear"))
-        CityData.linearGraph(sc).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
+        CityData.linearGraph(sc,hdfsLocation).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
       else if (tspInstance == "german") {
         CityData.germanCityGraph(sc).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
       } else if (tspInstance == "bavaria") {
-        CityData.bays29(sc).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
+        CityData.bays29(sc,hdfsLocation).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
       } else if (tspInstance == "berlin") {
-        CityData.berlin52(sc).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
+        CityData.berlin52(sc,hdfsLocation).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
       } else if (tspInstance == "sahara") {
-        CityData.sahara(sc).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
+        CityData.sahara(sc,hdfsLocation).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
       } else if (tspInstance == "st70") {
-        CityData.st70(sc).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
+        CityData.st70(sc,hdfsLocation).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
+      } else if (tspInstance == "1000") {
+        CityData.big(sc,hdfsLocation).mapEdges(e => (e.attr._1, 1.0, Vector.empty[Int]))
       } else {
         GraphGenerators
           .logNormalGraph(sc, 1000)
@@ -68,12 +71,12 @@ object TSPAntColony {
     for (i <- 1 to numIterations) {
 
       // let all ants make a tour trough all cities
-      for (j <- 1 to numCities) {
+      for (j <- 1 to 1) {
         // collect all incident edges for each vertex
         val vIncidentEdges: VertexRDD[Array[Edge[(Int, Double, Vector[Int])]]] = g.collectEdges(EdgeDirection.Either)
 
-        // calculate propability for each edge (except edges to previously visited cities)
-        val vIncidentEdgesWithPropability = vIncidentEdges
+        // calculate probability for each edge (except edges to previously visited cities)
+        val vIncidentEdgesWithProbability = vIncidentEdges
           .join(ants)
           .map {
             case (idCurrentCity, (incidentEdges, (antStart, antId, (antVisited, antTourlength), bestTour))) =>
@@ -84,14 +87,14 @@ object TSPAntColony {
                     !antVisited.contains(edge.dstId.toLong) || (antVisited.length == numCities && edge.dstId == antStart)
                   else
                     !antVisited.contains(edge.srcId.toLong) || (antVisited.length == numCities && edge.srcId == antStart))
-                .map(e => math.pow(e.attr._1, alpha) * Math.pow(e.attr._2, beta)) // calculate propability for every edge
+                .map(e => math.pow(e.attr._1, alpha) * Math.pow(e.attr._2, beta)) // calculate probability for every edge
                 .reduce( // get the sum 
                   (a, b) => {
                     (a + b)
                   }))
           }
-          .map { // calculate relative propability for edge to be traversed
-            case (id, (edges, (antStart, antId, (antVisited, antTourlength), bestTour)), prop) => {
+          .map { // calculate relative probability for edge to be traversed
+            case (id, (edges, (antStart, antId, (antVisited, antTourlength), bestTour)), prob) => {
               (id, edges.map(e => {
                 (e.srcId,
                   e.dstId,
@@ -102,16 +105,16 @@ object TSPAntColony {
                       (e.dstId == id && (antVisited.length < numCities && antVisited.contains(e.srcId.toLong) || antVisited.length == numCities && e.srcId != antStart)))
                       0
                     else
-                      math.pow(e.attr._1, alpha) * Math.pow(e.attr._2, beta) / prop),
+                      math.pow(e.attr._1, alpha) * Math.pow(e.attr._2, beta) / prob),
                     e.attr._3)
               }), (antStart, antId, (antVisited, antTourlength), bestTour))
             }
           } //----------.cache()
 
-        //vIncidentEdgesWithPropability.collect().foreach(a => println(a._1 + " " + a._2.mkString(",")))
+        //vIncidentEdgesWithProbability.collect().foreach(a => println(a._1 + " " + a._2.mkString(",")))
 
-        // select edge with highest propability
-        val vSelectedEdge = vIncidentEdgesWithPropability
+        // select edge with highest probability
+        val vSelectedEdge = vIncidentEdgesWithProbability
           .map {
             case (id, edges, ant) =>
               (id, (Seq((edges.maxBy(e => e._3._3), ant))))
@@ -157,7 +160,7 @@ object TSPAntColony {
         // set current vertex to target and add current vertex to tour
         ants = vSelectedEdge.map(ggg => {
           val idFrom = ggg._1
-          val (edgeSrc, edgeDst, (dist, pheromone, prop), vector) = ggg._2.head._1
+          val (edgeSrc, edgeDst, (dist, pheromone, prob), vector) = ggg._2.head._1
           val (antFrom, antId, (currentTour, currentLength), (bestTour, bestLength)) = ggg._2.head._2
 
           val idTo = if (idFrom == edgeSrc) edgeDst else edgeSrc
